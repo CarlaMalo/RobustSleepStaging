@@ -167,8 +167,7 @@ def parse_args():
     parser.add_argument('--checkpoint_final', default='checkpoints/checkpoint_final.pth')
     return parser.parse_args()
 
-
-if __name__ == '__main__':
+def main():
     args = parse_args()
 
     # Check if paths are valid
@@ -187,3 +186,6 @@ if __name__ == '__main__':
                 print(f"Warning: could not create checkpoint dir {d}", flush=True)
 
     train(args)
+    
+if __name__ == '__main__':
+    main()
