@@ -1,3 +1,5 @@
 data/
 __pycache__
 checkpoints/
+.venv/
+sleep_stager.egg-info/
