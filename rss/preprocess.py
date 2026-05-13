@@ -7,10 +7,10 @@ STAGE_MAP = {
     'Sleep stage 1': 1,
     'Sleep stage 2': 2,
     'Sleep stage 3': 3,
-    'Sleep stage 4': 4,
-    'Sleep stage R': 5,
+    'Sleep stage 4': 3, # Combine N3 and N4 into single "deep sleep" class
+    'Sleep stage R': 4,
 }
-STAGE_NAMES = {0: 'Wake', 1: 'N1', 2: 'N2', 3: 'N3', 4: 'N4', 5: 'REM'}
+STAGE_NAMES = {0: 'Wake', 1: 'N1', 2: 'N2', 3: 'N3', 4: 'REM'}
 KEEP_STAGES = set(STAGE_MAP.keys())
 
 def load_subject_epochs(psg_path, hyp_path, common_channels, l_freq=0.5, h_freq=40.0, epoch_sec=30.0, verbose=False):
