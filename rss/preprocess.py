@@ -85,7 +85,7 @@ def load_subject_epochs(psg_path, hyp_path, common_channels, l_freq=0.5, h_freq=
                         baseline=None, preload=True, verbose=False)
 
     # Extract data and labels
-    X = epochs.get_data()
+    X = epochs.get_data() * 1e6  # convert from volts to microvolts
     y = epochs.events[:, 2]
 
     if verbose:
