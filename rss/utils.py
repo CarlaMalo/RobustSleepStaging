@@ -2,13 +2,14 @@ import numpy as np
 from pathlib import Path
 
 
-def load_per_record_checkpoints(checkpoint_dir, load_mode="ram"):
+def load_per_record_checkpoints(checkpoint_dir, load_mode="ram", return_feature_names=False):
     """Load all .npz checkpoint files from a directory.
 
     Args:
         checkpoint_dir: Directory containing per-recording ``.npz`` files.
         load_mode: ``"ram"`` to concatenate into regular NumPy arrays,
             or ``"disk"`` to build/load a disk-backed memmap aggregate.
+        return_feature_names: if True, also return the feature names list when available
 
     Returns:
         X: ndarray (n_epochs, n_features)
@@ -17,8 +18,17 @@ def load_per_record_checkpoints(checkpoint_dir, load_mode="ram"):
     """
     checkpoint_dir = Path(checkpoint_dir)
     files = sorted(checkpoint_dir.glob("*.npz"))
+    feature_names = None
+
     if not files:
-        return np.empty((0, 0)), np.empty((0,), dtype=int), np.empty((0,), dtype=object)
+        out = (
+            np.empty((0, 0)),
+            np.empty((0,), dtype=int),
+            np.empty((0,), dtype=object),
+        )
+        if return_feature_names:
+            return (*out, None)
+        return out
 
     load_mode = str(load_mode).lower().strip()
     if load_mode not in {"ram", "disk"}:
@@ -46,6 +56,10 @@ def load_per_record_checkpoints(checkpoint_dir, load_mode="ram"):
                 with np.load(f, allow_pickle=True) as d:
                     if "X_features" not in d or "y_labels" not in d:
                         continue
+
+                    if feature_names is None and "feature_names" in d:
+                        feature_names = d["feature_names"]
+
                     Xf = d["X_features"]
                     yf = d["y_labels"]
                     total_epochs += int(Xf.shape[0])
@@ -62,7 +76,14 @@ def load_per_record_checkpoints(checkpoint_dir, load_mode="ram"):
                 print(f"[utils] scanned {i+1}/{len(files)} files — total_epochs so far: {total_epochs}")
 
         if total_epochs == 0 or feat_dim is None:
-            return np.empty((0, 0)), np.empty((0,), dtype=int), np.empty((0,), dtype=object)
+            out = (
+                np.empty((0, 0)),
+                np.empty((0,), dtype=int),
+                np.empty((0,), dtype=object),
+            )
+            if return_feature_names:
+                return (*out, None)
+            return out
 
         if x_path.exists() and y_path.exists() and sid_path.exists():
             try:
@@ -70,6 +91,8 @@ def load_per_record_checkpoints(checkpoint_dir, load_mode="ram"):
                 if y_loaded.shape[0] == total_epochs:
                     X_all = np.memmap(x_path, dtype="float32", mode="r", shape=(total_epochs, feat_dim))
                     sid_all = np.load(sid_path, mmap_mode="r")
+                    if return_feature_names:
+                        return X_all, y_loaded, sid_all, feature_names
                     return X_all, y_loaded, sid_all
             except Exception:
                 pass
@@ -104,6 +127,9 @@ def load_per_record_checkpoints(checkpoint_dir, load_mode="ram"):
         X_all = np.memmap(x_path, dtype="float32", mode="r", shape=(total_epochs, feat_dim))
         y_all = np.load(y_path, mmap_mode="r")
         sid_all = np.load(sid_path, mmap_mode="r")
+
+        if return_feature_names:
+            return X_all, y_all, sid_all, feature_names
         return X_all, y_all, sid_all
 
     parts = []
@@ -113,11 +139,14 @@ def load_per_record_checkpoints(checkpoint_dir, load_mode="ram"):
     for i, f in enumerate(files):
         try:
             with np.load(f, allow_pickle=True) as d:
-                if 'X_features' in d and 'y_labels' in d:
-                    Xf = d['X_features'].astype('float32')
+                if "X_features" in d and "y_labels" in d:
+                    if feature_names is None and "feature_names" in d:
+                        feature_names = d["feature_names"]
+
+                    Xf = d["X_features"].astype("float32")
                     parts.append(Xf)
-                    y_parts.append(d['y_labels'])
-                    sids.append(d.get('subject_ids', np.array([''] * Xf.shape[0])))
+                    y_parts.append(d["y_labels"])
+                    sids.append(d.get("subject_ids", np.array([""] * Xf.shape[0])))
         except Exception:
             print(f"[utils] warning: failed to load {f.name}")
             continue
@@ -125,10 +154,20 @@ def load_per_record_checkpoints(checkpoint_dir, load_mode="ram"):
             print(f"[utils] loaded {i+1}/{len(files)} files into lists")
 
     if not parts:
-        return np.empty((0, 0)), np.empty((0,), dtype=int), np.empty((0,), dtype=object)
+        out = (
+            np.empty((0, 0)),
+            np.empty((0,), dtype=int),
+            np.empty((0,), dtype=object),
+        )
+        if return_feature_names:
+            return (*out, None)
+        return out
 
     X = np.concatenate(parts, axis=0)
     y = np.concatenate(y_parts, axis=0)
     sids = np.concatenate(sids, axis=0)
     print(f"[utils] concatenated into arrays — X: {X.shape}, y: {y.shape}")
+
+    if return_feature_names:
+        return X, y, sids, feature_names
     return X, y, sids
