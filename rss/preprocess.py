@@ -18,7 +18,7 @@ KEEP_WAKE_BEFORE_SLEEP_MIN = 30
 
 
 # Functions
-def load_subject_epochs(psg_path, hyp_path, common_channels, l_freq=0.5, h_freq=40.0, epoch_sec=30.0, verbose=False):
+def load_subject_epochs(psg_path, hyp_path, common_channels, l_freq=0.5, h_freq=40.0, epoch_sec=30.0, do_sc_emg_processing=False, verbose=False):
     """Load raw EDF + hypnogram and return epoched data and labels.
 
     Returns:
@@ -41,7 +41,43 @@ def load_subject_epochs(psg_path, hyp_path, common_channels, l_freq=0.5, h_freq=
     raw.pick(available)
 
     # Filter signal
-    raw.filter(l_freq=l_freq, h_freq=h_freq, fir_design="firwin", verbose=False)
+    emg_channels = [ch for ch in raw.ch_names if "EMG" in ch.upper()]
+    non_emg_channels = [ch for ch in raw.ch_names if ch not in emg_channels]
+
+    # Normal filtering for EEG/EOG/etc.
+    if non_emg_channels:
+        raw.filter(
+            l_freq=l_freq,
+            h_freq=h_freq,
+            picks=non_emg_channels,
+            fir_design="firwin",
+            verbose=False,
+        )
+
+    # Sleep-Cassette-like EMG processing:
+    # high-pass 16 Hz -> rectification -> low-pass 0.7 Hz
+    if emg_channels and do_sc_emg_processing:
+        raw.filter(
+            l_freq=16.0,
+            h_freq=None,
+            picks=emg_channels,
+            fir_design="firwin",
+            verbose=False,
+        )
+
+        raw.apply_function(
+            np.abs,
+            picks=emg_channels,
+            channel_wise=True,
+        )
+
+        raw.filter(
+            l_freq=None,
+            h_freq=0.7,
+            picks=emg_channels,
+            fir_design="firwin",
+            verbose=False,
+        )
 
     annotations = mne.read_annotations(hyp_path)
     raw.set_annotations(annotations)
