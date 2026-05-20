@@ -25,7 +25,7 @@ The repository provides preprocessing, feature extraction, model training and ev
 
 7. Run the workflow in **RobustSleepStagingV2.ipynb**
 
-8. (Optionally) After running the workflow (which created the feature and model checkpoints) you can run **example_features.ipynb** to analyze the feature selection. 
+8. (Optionally) After running the workflow (which created the feature and model checkpoints) you can run **example_features.ipynb** to analyze the feature selection and the **example_hypnogram.ipynb** to visualize the predictions. 
 
 ## Team Members
 - Alexandros Christopoulos
@@ -33,3 +33,11 @@ The repository provides preprocessing, feature extraction, model training and ev
 - Daksa Chellappah
 - Enrique Perez
 - Roland Widmer
+
+## Additional experiments
+
+The pipeline design supports other model architectures such as CNN. 
+Run the workflow experiment in **RobustSleepStagingCNN.ipynb**
+
+
+(along with the requirements_cnn_with_gpu.txt)
